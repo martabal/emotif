@@ -1,0 +1,40 @@
+[workspace]
+resolver = "2"
+members = ["crates/emotif", "crates/emojeez", "crates/emojeez_generate", "crates/unicode-types"]
+
+[workspace.package]
+authors = ["martabal"]
+edition = "2024"
+rust-version = "1.88"
+license = "MIT"
+repository = "https://github.com/martabal/emotif/"
+
+[workspace.dependencies]
+emojeez = { path = "crates/emojeez" }
+hex = { version = "0.4.3" }
+serde = { version = "1.0.228" }
+serde_json = { version = "1.0.145" }
+sha2 = { version = "0.10.9" }
+reqwest = { version = "0.12.24", default-features = false, features = ["json", "gzip", "deflate", "zstd", "rustls-tls", "rustls-tls-native-roots", "blocking"] }
+unicode-types = { path = "crates/unicode-types" }
+gtk4 = { version = "0.10.1" }
+glib = { version = "0.21.3" }
+gio = { version = "0.21.2" }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = 'abort'
+strip = "symbols"
+
+[workspace.lints.clippy]
+missing_errors_doc = "allow"
+struct_excessive_bools = "allow"
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }
+style = { level = "deny", priority = -1 }
+complexity = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
