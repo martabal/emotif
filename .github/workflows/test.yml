@@ -1,0 +1,176 @@
+name: Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 #v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev
+
+      - uses: actions-rust-lang/setup-rust-toolchain@2fcdc490d667999e01ddbbf0f2823181beef6b39 #v1.15.0
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 #v2.8.1
+        with:
+          cache-on-failure: "true"
+
+      - name: Run linter
+        run: cargo clippy --all -- -D warnings
+        if: ${{ !cancelled() }}
+
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 #v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev
+
+      - uses: actions-rust-lang/setup-rust-toolchain@2fcdc490d667999e01ddbbf0f2823181beef6b39 #v1.15.0
+        with:
+          components: rustfmt
+
+      - name: Run formatter
+        run: cargo fmt --check
+        if: ${{ !cancelled() }}
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 #v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev
+
+      - uses: actions-rust-lang/setup-rust-toolchain@2fcdc490d667999e01ddbbf0f2823181beef6b39 #v1.15.0
+
+      - uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 #v2.8.1
+        with:
+          cache-on-failure: "true"
+
+      - name: Run unit tests
+        run: cargo test
+        if: ${{ !cancelled() }}
+
+  msrv:
+    name: MSRV
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 #v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev
+
+      - uses: actions-rust-lang/setup-rust-toolchain@2fcdc490d667999e01ddbbf0f2823181beef6b39 #v1.15.0
+        with:
+          toolchain: "1.88.0"
+
+      - uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 #v2.8.1
+        with:
+          cache-on-failure: "true"
+
+      - run: cargo check --locked
+
+  up-to-date:
+    name: Up-to-date
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 #v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev
+
+      - uses: actions-rust-lang/setup-rust-toolchain@2fcdc490d667999e01ddbbf0f2823181beef6b39 #v1.15.0
+
+      - uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 #v2.8.1
+        with:
+          cache-on-failure: "true"
+
+      - name: Generate emojeez
+        run: cargo run --package emojeez_generate
+        if: ${{ !cancelled() }}
+
+      - name: Check for uncommitted changes
+        run: |
+          git status --porcelain
+          if [ -n "$(git status --porcelain)" ]; then
+            exit 1
+          fi
+
+  typos:
+    name: Typos
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 #v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Spell check code
+        uses: crate-ci/typos@85f62a8a84f939ae994ab3763f01a0296d61a7ee
+        with:
+          config: .github/typos.toml
